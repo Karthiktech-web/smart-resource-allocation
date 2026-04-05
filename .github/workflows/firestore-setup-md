@@ -1,0 +1,21 @@
+# Firestore Setup — Complete
+
+## Collections Created:
+- programs ✅
+- areas ✅
+- volunteers ✅
+- needs ✅
+- surveys ✅
+- assignments ✅
+- impact_logs ✅
+- users ✅
+
+## Authentication:
+- Google Sign-in: Enabled ✅
+
+## Security Rules: Published ✅
+
+## Firebase Config: Shared with Chandu ✅
+
+## Done by: Manjunadh
+## Date: April 2026
