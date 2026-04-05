@@ -1,3 +1,4 @@
+
 """
 Smart Resource Allocation — Main FastAPI Application
 All API endpoints for the platform.
@@ -786,3 +787,4 @@ def _urgency_to_score(urgency: str) -> float:
         "low": 3.0,
     }
     return scores.get(urgency, 5.0)
+

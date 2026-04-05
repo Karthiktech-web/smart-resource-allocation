@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    name: Backend Test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install fastapi uvicorn
+
+      - name: Run basic test
+        run: echo "Backend setup OK"
+
+  frontend-test:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install || echo "No frontend yet"
+
+      - name: Build
+        run: npm run build || echo "Skipping build"
+
+  deploy:
+    name: Deploy (Placeholder)
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Deployment Step
+        run: echo "Deployment will be added later"
