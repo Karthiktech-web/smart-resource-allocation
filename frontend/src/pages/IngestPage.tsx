@@ -52,7 +52,7 @@ export default function IngestPage() {
 
     try {
       const formData = new FormData();
-      formData.append('image', files[0]);
+      formData.append('file', files[0]);
       formData.append('program_id', selectedProgram);
       formData.append('location_name', locationName);
       formData.append('lat', lat || '0');
