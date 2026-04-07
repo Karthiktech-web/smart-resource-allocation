@@ -13,7 +13,8 @@ def upload_image(file_bytes: bytes, filename: str, content_type: str = "image/pn
     """
     settings = get_settings()
     client = storage.Client()
-    bucket = client.bucket(settings.gcs_bucket_name)
+    bucket = client.bucket(settings.cloud_storage_bucket)
+
 
     unique_name = f"surveys/{uuid.uuid4()}-{filename}"
     blob = bucket.blob(unique_name)

@@ -292,9 +292,20 @@ export default function IngestPage() {
               <strong>Summary:</strong> {results.summary}
             </p>
             <p className="text-xs text-blue-600 mt-1">
-              Sentiment: {results.sentiment} | Overall confidence:{' '}
-              {(results.confidence * 100).toFixed(0)}%
-            </p>
+  Sentiment: {results.sentiment} | Overall confidence:{' '}
+  {results.needs_extracted?.length
+    ? (
+        (results.needs_extracted.reduce(
+          (sum: number, need: any) => sum + (need.confidence || 0),
+          0
+        ) /
+          results.needs_extracted.length) *
+        100
+      ).toFixed(0)
+    : '0'}
+  %
+</p>
+
           </div>
         </div>
       )}
