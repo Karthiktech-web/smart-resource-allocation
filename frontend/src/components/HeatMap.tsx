@@ -17,7 +17,7 @@ interface HeatMapProps {
   onAreaClick?: (point: HeatMapPoint) => void;
 }
 
-export default function HeatMap({ data, onAreaClick }: HeatMapProps) {
+export default function HeatMap({ data }: HeatMapProps) {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
     libraries,

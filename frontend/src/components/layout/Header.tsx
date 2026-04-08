@@ -1,4 +1,5 @@
-import { signOut, User } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { LogOut, Bell } from 'lucide-react';
 
