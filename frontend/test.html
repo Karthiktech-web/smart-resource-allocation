@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>FCM Test</title>
+  </head>
+  <body>
+    <h2>FCM Test</h2>
+    <div style="margin-bottom: 1rem; font-family: sans-serif; max-width: 420px;">
+      <label style="display:block; margin-bottom:0.5rem;">
+        Notification target type:
+        <select id="targetType" style="width: 100%; padding: 0.4rem; margin-top: 0.25rem;">
+          <option value="user_id">User ID</option>
+          <option value="volunteer_id">Volunteer ID</option>
+        </select>
+      </label>
+      <label style="display:block; margin-bottom:0.75rem;">
+        ID value:
+        <input id="targetId" type="text" placeholder="enter valid Firestore ID" style="width: 100%; padding: 0.4rem; margin-top: 0.25rem;" />
+      </label>
+      <button id="getTokenButton">Get Token</button>
+    </div>
+    <div id="status" style="font-family: sans-serif; color: #333;"></div>
+    <div id="debug" style="font-family: monospace; color: #666; margin-top: 0.5rem;"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    <script>
+      console.log('FCM test page script start');
+      window.addEventListener('error', event => {
+        document.getElementById('status').textContent = 'Script error: ' + event.message;
+        document.getElementById('debug').textContent = 'Error at ' + event.filename + ':' + event.lineno + ':' + event.colno;
+        console.error('Window error:', event.error || event.message);
+      });
+      window.addEventListener('unhandledrejection', event => {
+        document.getElementById('status').textContent = 'Unhandled promise rejection';
+        document.getElementById('debug').textContent = String(event.reason);
+        console.error('Unhandled rejection:', event.reason);
+      });
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyA__xAvct5pZPmeyhX9rlQd2TE3IS1q0_Y",
+        authDomain: "sra-backend-2026.firebaseapp.com",
+        projectId: "sra-backend-2026",
+        messagingSenderId: "256611262132",
+        appId: "1:256611262132:web:d990bce2f611cac36101e1"
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const messaging = firebase.messaging();
+      const statusEl = document.getElementById("status");
+      const vapidKey = "BB4Zfaaau1UJELL_2gU1e7nR9rR9uthNIDEETZoFyTGXrVIZfXhokQ4hBvEpi7Viqwzsy4xv2tybLaEyz76SBks";
+      const swUrl = "firebase-messaging-sw.js";
+
+      messaging.onMessage((payload) => {
+        console.log('Foreground FCM message received:', payload);
+        const title = payload.notification && payload.notification.title ? payload.notification.title : 'New notification';
+        const options = {
+          body: payload.notification && payload.notification.body ? payload.notification.body : '',
+          icon: payload.notification && payload.notification.icon ? payload.notification.icon : '/firebase-logo.png'
+        };
+
+        if (Notification.permission === 'granted') {
+          try {
+            new Notification(title, options);
+          } catch (err) {
+            console.warn('Unable to show foreground Notification API notification:', err);
+          }
+        }
+
+        setStatus('Foreground message received: ' + title);
+      });
+
+      const debugEl = document.getElementById('debug');
+
+      function setStatus(message) {
+        if (statusEl) {
+          statusEl.textContent = message;
+        }
+        console.log(message);
+      }
+
+      function setDebug(message) {
+        if (debugEl) {
+          debugEl.textContent = message;
+        }
+        console.log('DEBUG:', message);
+      }
+
+      function initializePage() {
+        setStatus('Page loaded. Ready for Get Token.');
+        setDebug('Ready');
+        const button = document.getElementById('getTokenButton');
+        if (!button) {
+          console.error('Get Token button not found');
+          setDebug('Button not found');
+          return;
+        }
+        button.addEventListener('click', getToken);
+      }
+
+      async function registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) {
+          throw new Error('Service Worker is not supported in this browser.');
+        }
+
+        const registration = await navigator.serviceWorker.register(swUrl);
+        await navigator.serviceWorker.ready;
+        return registration;
+      }
+
+      async function ensureNotificationPermission() {
+        if (!('Notification' in window)) {
+          throw new Error('Notifications are not supported in this browser.');
+        }
+
+        if (Notification.permission === 'granted') {
+          return 'granted';
+        }
+
+        if (Notification.permission === 'denied') {
+          throw new Error('Notification permission is denied. Please enable it in browser settings.');
+        }
+
+        return await Notification.requestPermission();
+      }
+
+      async function sendTokenToBackend(token, type, id) {
+        if (!id) {
+          throw new Error('Please enter a valid user_id or volunteer_id.');
+        }
+
+        const apiUrl = 'http://localhost:8000/api/auth/fcm-token';
+        const payload = {
+          fcm_token: token,
+          [type]: id
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`Backend error ${response.status}: ${text}`);
+        }
+
+        return await response.json();
+      }
+
+      async function getToken() {
+        setStatus('Button clicked — starting token flow...');
+        setDebug('Button clicked');
+
+        try {
+          setStatus('Registering service worker...');
+          const registration = await registerServiceWorker();
+          setStatus('Requesting notification permission...');
+          const permission = await ensureNotificationPermission();
+
+          if (permission !== 'granted') {
+            setStatus('Notification permission not granted.');
+            alert('Please allow notifications in the browser prompt or site settings.');
+            return;
+          }
+
+          const targetType = document.getElementById('targetType').value;
+          const targetId = document.getElementById('targetId').value.trim();
+
+          if (!targetId) {
+            alert('Enter a valid user_id or volunteer_id before requesting the token.');
+            return;
+          }
+
+          setDebug(`Sending token for ${targetType}: ${targetId}`);
+          setStatus('Getting FCM token...');
+          const token = await messaging.getToken({
+            vapidKey,
+            serviceWorkerRegistration: registration
+          });
+
+          setStatus('Sending token to backend...');
+          const result = await sendTokenToBackend(token, targetType, targetId);
+
+          setStatus('Token sent to backend successfully.');
+          alert('Token saved to backend:\n\n' + JSON.stringify(result, null, 2));
+          console.log('FCM token:', token);
+        } catch (error) {
+          console.error('Error getting or sending FCM token:', error);
+          setStatus(error.message || 'Failed to get or send FCM token. Check console.');
+          alert('Failed to get or send token. Check the browser console for details.');
+        }
+      }
+
+      initializePage();
+    </script>
+  </body>
+</html>

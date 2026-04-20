@@ -6,7 +6,6 @@ import {
   CheckCircle,
   Loader2,
   AlertTriangle,
-  MapPin,
 } from 'lucide-react';
 import { digitizeSurvey, getPrograms } from '../lib/api';
 import { getUrgencyColor, getCategoryColor } from '../lib/utils';

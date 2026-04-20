@@ -13,6 +13,7 @@ Gemini is used for:
 from google import genai
 from google.genai import types
 from app.config import get_settings
+import concurrent.futures
 import json
 import logging
 import re
@@ -24,6 +25,76 @@ def _get_client() -> genai.Client:
     """Get Gemini client."""
     settings = get_settings()
     return genai.Client(api_key=settings.gemini_api_key)
+
+
+def _normalize_text(value: str) -> str:
+    return (value or "").strip().lower()
+
+
+def _local_need_recommendation(need: dict, volunteers: list[dict]) -> dict:
+    if not volunteers:
+        return {
+            "recommendation": {
+                "volunteer_index": 0,
+                "match_score": 0,
+                "reasoning": "No available volunteers to recommend.",
+            },
+            "summary": "No volunteers available for local fallback recommendation.",
+        }
+
+    need_category = _normalize_text(need.get("category"))
+    best_score = -1.0
+    best_index = 0
+    best_volunteer = None
+
+    for index, volunteer in enumerate(volunteers[:15]):
+        score = float(volunteer.get("reliability_score", 0.5)) * 0.5
+        volunteer_skills = [s.strip().lower() for s in volunteer.get("skills", []) if isinstance(s, str)]
+
+        if need_category and need_category in volunteer_skills:
+            score += 0.25
+
+        if need.get("urgency") == "critical":
+            score += 0.1
+
+        try:
+            lat1 = float(need.get("lat", 0) or 0)
+            lng1 = float(need.get("lng", 0) or 0)
+            lat2 = float(volunteer.get("lat", 0) or 0)
+            lng2 = float(volunteer.get("lng", 0) or 0)
+            distance = ((lat1 - lat2) ** 2 + (lng1 - lng2) ** 2) ** 0.5
+            score += max(0.0, 0.2 - distance / 5)
+        except (TypeError, ValueError):
+            distance = None
+
+        if score > best_score:
+            best_score = score
+            best_index = index
+            best_volunteer = volunteer
+
+    if not best_volunteer:
+        return {
+            "recommendation": {
+                "volunteer_index": 0,
+                "match_score": 0,
+                "reasoning": "No suitable volunteer could be selected.",
+            },
+            "summary": "Local fallback recommendation was not able to select a volunteer.",
+        }
+
+    recommendation = {
+        "volunteer_index": best_index + 1,
+        "match_score": round(min(1.0, best_score), 2),
+        "reasoning": (
+            f"Selected {best_volunteer.get('name', 'a volunteer')} based on reliability"
+            f" and skill match with the need category {need_category or 'unknown'}."
+        ),
+    }
+
+    return {
+        "recommendation": recommendation,
+        "summary": "Local fallback recommendation used because the AI service was unavailable or timed out.",
+    }
 
 
 def analyze_survey(translated_text: str, sentiment: dict, location_name: str) -> dict:
@@ -291,6 +362,73 @@ Use this exact schema:
         }
 
 
+def recommend_need(need: dict, volunteers: list[dict]) -> dict:
+    client = _get_client()
+
+    need_text = f"NEED: [{need.get('urgency', 'medium').upper()}] {need.get('category', 'unknown')} at {need.get('location_name', 'Unknown')} - {need.get('title', '')}"
+    volunteers_text = "\n".join([
+        f"VOL-{i+1}: {v.get('name', 'Unknown')} | Skills: {', '.join(v.get('skills', []))} | Location: {v.get('location_name', 'Unknown')} | Available: {v.get('availability', 'unknown')} | Reliability: {v.get('reliability_score', 0)}"
+        for i, v in enumerate(volunteers[:15])
+    ])
+
+    prompt = f"""You are an AI volunteer recommender for humanitarian response.
+
+OPEN NEED:
+{need_text}
+
+AVAILABLE VOLUNTEERS:
+{volunteers_text}
+
+TASK:
+Recommend the best volunteer for this need.
+
+Return ONLY valid JSON.
+Do not use markdown fences.
+Do not include explanations outside JSON.
+Use this exact schema:
+{
+  "recommendation": {
+    "volunteer_index": 1,
+    "match_score": 0.92,
+    "reasoning": "Why this volunteer is a good fit"
+  },
+  "summary": "Overall recommendation summary"
+}
+"""
+
+    def generate():
+        return client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=1024,
+            ),
+        )
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(generate)
+            response = future.result(timeout=15)
+
+        text = response.text.strip()
+        text = re.sub(r"^```json\s*", "", text)
+        text = re.sub(r"^```\s*", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+
+        result = json.loads(text)
+        return result
+
+    except concurrent.futures.TimeoutError:
+        logger.error("Gemini need recommendation request timed out")
+        return _local_need_recommendation(need, volunteers)
+    except json.JSONDecodeError as e:
+        logger.error(f"Gemini need recommendation JSON parse error: {e}")
+        return _local_need_recommendation(need, volunteers)
+    except Exception as e:
+        logger.error(f"Gemini need recommendation error: {e}")
+        return _local_need_recommendation(need, volunteers)
+
 
 def generate_impact_report(impact_logs: list[dict], areas: list[dict]) -> dict:
     client = _get_client()
@@ -350,3 +488,169 @@ Respond with ONLY valid JSON:
             "highest_impact_areas": [],
             "recommendations": [],
         }
+def analyze_area_portfolio(
+    area: dict,
+    needs: list[dict],
+    programs: list[dict],
+    volunteers: list[dict],
+) -> dict:
+    """
+    Richer Phase 2 area analysis that correlates needs across programs and
+    recommends a volunteer skill mix for the area as a whole.
+    """
+    client = _get_client()
+
+    area_summary = {
+        "name": area.get("name", "Unknown"),
+        "district": area.get("district", ""),
+        "state": area.get("state", "Andhra Pradesh"),
+        "population_affected": area.get("population_affected", "Unknown"),
+        "current_compound_score": area.get("compound_score", 0),
+        "current_area_priority": area.get("area_priority", "low"),
+        "volunteers_assigned": area.get("volunteers_assigned", 0),
+    }
+
+    programs_summary = [
+        {
+            "name": program.get("name", "Unknown"),
+            "category": program.get("category", "other"),
+            "organization": program.get("organization", "Unknown"),
+            "survey_count": program.get("survey_count", 0),
+        }
+        for program in programs
+    ]
+
+    needs_summary = [
+        {
+            "category": need.get("category", "other"),
+            "urgency": need.get("urgency", "medium"),
+            "status": need.get("status", "open"),
+            "description": need.get("description", "")[:160],
+            "source_program_id": need.get("source_program_id", ""),
+            "ai_confidence": need.get("ai_confidence", 0),
+        }
+        for need in needs
+    ]
+
+    volunteers_summary = [
+        {
+            "name": volunteer.get("name", "Unknown"),
+            "skills": volunteer.get("skills", []),
+            "availability": volunteer.get("availability", "unknown"),
+            "reliability_score": volunteer.get("reliability_score", 0),
+            "active_assignments": volunteer.get("active_assignments", 0),
+        }
+        for volunteer in volunteers[:15]
+    ]
+
+    prompt = f"""You are an expert NGO operations analyst.
+
+AREA:
+{json.dumps(area_summary, indent=2)}
+
+PROGRAMS ACTIVE IN THIS AREA:
+{json.dumps(programs_summary, indent=2)}
+
+DISCOVERED NEEDS ACROSS ALL PROGRAMS:
+{json.dumps(needs_summary, indent=2)}
+
+VOLUNTEERS NEAR THIS AREA:
+{json.dumps(volunteers_summary, indent=2)}
+
+TASK:
+Perform cross-program analysis for this area and return ONLY valid JSON.
+Do not use markdown fences.
+Do not include any explanation outside JSON.
+
+Use this exact schema:
+{{
+  "compound_score": 8.4,
+  "area_priority": "critical",
+  "cross_program_insights": [
+    "Water and health needs are reinforcing each other across programs"
+  ],
+  "total_volunteers_recommended": 8,
+  "skill_mix_needed": ["water sanitation", "community health"],
+  "risk_factors": ["Contaminated water source", "Limited transport access"],
+  "recommended_actions": [
+    "Deploy a combined water-health response team first"
+  ],
+  "estimated_impact": "A coordinated intervention could reduce urgent risk for roughly 1,500 people."
+}}
+
+Rules:
+- area_priority must be one of: critical, high, medium, low
+- compound_score must be a number between 0 and 10
+- skill_mix_needed, risk_factors, recommended_actions, and cross_program_insights must be arrays
+- recommended_actions should be prioritized and practical
+"""
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=2048,
+            ),
+        )
+
+        text = response.text.strip()
+        text = re.sub(r"^```json\s*", "", text)
+        text = re.sub(r"^```\s*", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+
+        result = json.loads(text)
+        logger.info(
+            "Gemini area portfolio analysis for %s: score=%s",
+            area.get("name", "Unknown"),
+            result.get("compound_score"),
+        )
+        return result
+
+    except json.JSONDecodeError as e:
+        logger.error("Gemini area portfolio JSON parse error: %s", e)
+    except Exception as e:
+        logger.error("Gemini area portfolio error: %s", e)
+
+    # Fallback analysis if AI fails
+    open_needs = [need for need in needs if need.get("status", "open") == "open"]
+    critical_needs = [need for need in needs if need.get("urgency") == "critical"]
+    categories = sorted({need.get("category", "other") for need in needs if need.get("category")})
+
+    score = min(
+        10.0,
+        round(
+            (len(open_needs) * 0.7) +
+            (len(critical_needs) * 1.2) +
+            (len(categories) * 0.4),
+            1,
+        ),
+    )
+
+    if score >= 8:
+        priority = "critical"
+    elif score >= 6:
+        priority = "high"
+    elif score >= 3:
+        priority = "medium"
+    else:
+        priority = "low"
+
+    insights = []
+    if len(categories) > 1:
+        insights.append(
+            f"{len(categories)} need categories are overlapping in this area, which increases coordination complexity."
+        )
+    if critical_needs:
+        insights.append(
+            f"{len(critical_needs)} critical needs are still open and should be handled before lower urgency requests."
+        )
+    if not insights:
+        insights.append("Area analysis used fallback scoring because AI analysis was unavailable.")
+
+    return {
+        "compound_score": score,
+        "area_priority": priority,
+        "cross_program_insights": insights,
+    }

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional
 from datetime import datetime
 
@@ -165,8 +165,38 @@ class AllocationPlan(BaseModel):
     total_volunteers_used: int
     ai_summary: str
 
+class AssignmentItem(BaseModel):
+    volunteer_id: Optional[str] = None
+    volunteerId: Optional[str] = None
+    need_id: Optional[str] = None
+    need_ids: Optional[list[str]] = None
+    needIds: Optional[list[str]] = None
+    area_id: Optional[str] = None
+    areaId: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_assignment_item(self):
+        volunteer = self.volunteer_id or self.volunteerId
+        need_id = self.need_id
+        need_ids = self.need_ids or self.needIds
+
+        if not volunteer:
+            raise ValueError("volunteer_id or volunteerId is required")
+        if not need_id and not need_ids:
+            raise ValueError("need_id or need_ids is required")
+        return self
+
+
 class AllocationApproveRequest(BaseModel):
-    assignments: list[dict]
+    assignments: Optional[list[AssignmentItem]] = None
+    allocations: Optional[list[AssignmentItem]] = None
+
+    @model_validator(mode="after")
+    def validate_allocation_request(self):
+        if not self.assignments and not self.allocations:
+            raise ValueError("assignments or allocations is required")
+        return self
+
 
 class ImpactLogCreate(BaseModel):
     category: str

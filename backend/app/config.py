@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
@@ -21,4 +25,10 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    credentials_path = Path(settings.google_application_credentials)
+    if not credentials_path.is_absolute():
+        credentials_path = BASE_DIR / credentials_path
+    settings.google_application_credentials = str(credentials_path)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(credentials_path)
+    return settings
