@@ -24,9 +24,9 @@ export default function ProgramDetailPage() {
     async function fetchData() {
       try {
         const [progRes, surveyRes, needsRes] = await Promise.all([
-          getProgramById(id),
-          getProgramSurveys(id),
-          getProgramNeeds(id),
+          getProgramById(id!),
+          getProgramSurveys(id!),
+          getProgramNeeds(id!),
         ]);
 
         setProgram(progRes?.data || null);

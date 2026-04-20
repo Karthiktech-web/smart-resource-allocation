@@ -24,15 +24,10 @@ const CATEGORY_COLORS: Record<string, string> = {
   infrastructure: '#46bdc6',
 };
 
-<<<<<<< HEAD
-export default function HeatMap({ data }: HeatMapProps) {
-=======
 export default function HeatMap({ data, areas }: { data: HeatMapPoint[]; areas?: any[] }) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedArea, setSelectedArea] = useState<any>(null);
-  
->>>>>>> fd3cb6e71d4d9e7891d25334d9d98680ba3234ab
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
     libraries,

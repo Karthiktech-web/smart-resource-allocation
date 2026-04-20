@@ -11,7 +11,6 @@ import AllocatePage from './pages/AllocatePage';
 import ImpactPage from './pages/ImpactPage';
 import VolunteersPage from './pages/VolunteersPage';
 import AreaDetailPage from './pages/AreaDetailPage';
-import AreaDetailPage from './pages/AreaDetailPage';
 <Route path="/areas/:id" element={<AreaDetailPage />} />
 
 
