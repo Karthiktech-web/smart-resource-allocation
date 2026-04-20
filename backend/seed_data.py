@@ -41,8 +41,48 @@ def clear_collection(collection_name: str):
 
 def clear_all():
     print("Clearing existing data...")
-    for col in ["programs", "areas", "needs", "volunteers", "assignments", "impact_logs", "surveys"]:
+    for col in ["users", "programs", "areas", "needs", "volunteers", "assignments", "impact_logs", "surveys"]:
         clear_collection(col)
+    print("  Done!\n")
+
+
+def seed_users():
+    print("Seeding users...")
+    users = [
+        {
+            "name": "Karthik",
+            "email": "karthikredapanguvrsec@gmail.com",
+            "role": "coordinator",
+            "organization": "SRA team",
+            "created_at": datetime.utcnow()
+        },
+        {
+            "name": "Chandu",
+            "email": "chandukore2006@gmail.com",
+            "role": "coordinator",
+            "organization": "SRA team",
+            "created_at": datetime.utcnow()
+        },
+        {
+            "name": "Manjunadh",
+            "email": "manjunadhadapa@gmail.com",
+            "role": "coordinator",
+            "organization": "SRA team",
+            "created_at": datetime.utcnow()
+        },
+        {
+            "name": "Leela Ravindra",
+            "email": "www.leela.padala12@gmail.com",
+            "role": "coordinator",
+            "organization": "SRA team",
+            "created_at": datetime.utcnow()
+        }
+    ]
+
+    for user in users:
+        ref = db.collection("users").document()
+        ref.set(user)
+        print(f"  Created user: {user['name']} ({user['role']})")
     print("  Done!\n")
 
 
@@ -210,6 +250,85 @@ def seed_areas(program_ids: list[str]) -> list[str]:
             "created_at": datetime.utcnow() - timedelta(days=8),
             "updated_at": datetime.utcnow(),
         },
+        # ============ ADDITIONAL AREAS ============
+        {
+            "name": "Guntur Rural",
+            "district": "Guntur",
+            "state": "Andhra Pradesh",
+            "lat": 16.3067,
+            "lng": 80.4365,
+            "total_needs": 5,
+            "open_needs": 4,
+            "needs_by_category": {"water": 2, "health": 1, "education": 1, "food": 1},
+            "critical_needs_count": 2,
+            "compound_score": 7.8,
+            "area_priority": "high",
+            "programs_active": [],  # Will be filled when programs are created
+            "volunteers_assigned": 1,
+            "volunteers_recommended": 8,
+            "volunteer_gap": 7,
+            "population_affected": 1800,
+            "ai_insights": [
+                "Water contamination from agricultural runoff is a growing concern",
+                "Education dropout rates are increasing due to economic pressure",
+                "Combined water+health intervention recommended"
+            ],
+            "last_analyzed_at": datetime.utcnow(),
+            "created_at": datetime.utcnow() - timedelta(days=3),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "Visakhapatnam North",
+            "district": "Visakhapatnam",
+            "state": "Andhra Pradesh",
+            "lat": 17.7231,
+            "lng": 83.3013,
+            "total_needs": 4,
+            "open_needs": 3,
+            "needs_by_category": {"shelter": 2, "health": 1, "infrastructure": 1},
+            "critical_needs_count": 1,
+            "compound_score": 6.5,
+            "area_priority": "high",
+            "programs_active": [],
+            "volunteers_assigned": 0,
+            "volunteers_recommended": 6,
+            "volunteer_gap": 6,
+            "population_affected": 1100,
+            "ai_insights": [
+                "Cyclone damage from last season still unrepaired",
+                "Health issues linked to temporary shelter conditions",
+                "Infrastructure repairs needed before monsoon"
+            ],
+            "last_analyzed_at": datetime.utcnow(),
+            "created_at": datetime.utcnow() - timedelta(days=2),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "Chittoor South",
+            "district": "Chittoor",
+            "state": "Andhra Pradesh",
+            "lat": 13.2172,
+            "lng": 79.1003,
+            "total_needs": 3,
+            "open_needs": 2,
+            "needs_by_category": {"education": 2, "food": 1},
+            "critical_needs_count": 0,
+            "compound_score": 4.2,
+            "area_priority": "medium",
+            "programs_active": [],
+            "volunteers_assigned": 1,
+            "volunteers_recommended": 3,
+            "volunteer_gap": 2,
+            "population_affected": 650,
+            "ai_insights": [
+                "Education needs are manageable with 2 additional tutors",
+                "Food insecurity is seasonal - peaks during summer",
+                "Area is relatively stable compared to others"
+            ],
+            "last_analyzed_at": datetime.utcnow(),
+            "created_at": datetime.utcnow() - timedelta(days=1),
+            "updated_at": datetime.utcnow(),
+        },
     ]
 
     ids = []
@@ -219,6 +338,25 @@ def seed_areas(program_ids: list[str]) -> list[str]:
         ids.append(ref.id)
         print(f"  Created area: {area['name']} [score: {area['compound_score']}]")
     return ids
+
+
+def update_new_areas_with_programs(program_ids: list[str]):
+    print("\nUpdating new areas with program references...")
+    
+    # Map area names to program IDs
+    area_updates = {
+        "Guntur Rural": [program_ids[0], program_ids[3]],  # Water + Food
+        "Visakhapatnam North": [program_ids[1], program_ids[3]],  # Health + Food  
+        "Chittoor South": [program_ids[2], program_ids[3]],  # Education + Food
+    }
+    
+    for area_name, prog_ids in area_updates.items():
+        areas_query = db.collection("areas").where("name", "==", area_name).stream()
+        for area_doc in areas_query:
+            area_doc.reference.update({"programs_active": prog_ids})
+            print(f"  Updated {area_name} with {len(prog_ids)} active programs")
+            break
+    print("  Done!\n")
 
 
 def seed_needs(program_ids: list[str], area_ids: list[str]) -> list[str]:
@@ -368,10 +506,216 @@ def seed_needs(program_ids: list[str], area_ids: list[str]) -> list[str]:
             "created_at": datetime.utcnow() - timedelta(days=3),
             "updated_at": datetime.utcnow(),
         },
+        # ============ ADDITIONAL NEEDS ============
+        {
+            "title": "Clean Water Access",
+            "description": "Agricultural runoff contaminating drinking water sources",
+            "category": "water",
+            "urgency": "critical",
+            "location_name": "Guntur Rural",
+            "lat": 16.3067,
+            "lng": 80.4365,
+            "area_id": "",  # Will be set dynamically
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[0],
+            "ai_confidence": 0.85,
+            "ai_priority_score": 8.5,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow() - timedelta(days=3),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Medical Supplies",
+            "description": "Shortage of basic medical supplies in rural clinic",
+            "category": "health",
+            "urgency": "high",
+            "location_name": "Guntur Rural",
+            "lat": 16.3067,
+            "lng": 80.4365,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[1],
+            "ai_confidence": 0.78,
+            "ai_priority_score": 7.8,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow() - timedelta(days=2),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "School Materials",
+            "description": "Children need textbooks and stationery",
+            "category": "education",
+            "urgency": "medium",
+            "location_name": "Guntur Rural",
+            "lat": 16.3067,
+            "lng": 80.4365,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[2],
+            "ai_confidence": 0.72,
+            "ai_priority_score": 6.2,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow() - timedelta(days=1),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Food Distribution",
+            "description": "Families experiencing food insecurity",
+            "category": "food",
+            "urgency": "high",
+            "location_name": "Guntur Rural",
+            "lat": 16.3067,
+            "lng": 80.4365,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[3],
+            "ai_confidence": 0.80,
+            "ai_priority_score": 7.0,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Emergency Shelter",
+            "description": "Cyclone-damaged homes need immediate repair",
+            "category": "shelter",
+            "urgency": "critical",
+            "location_name": "Visakhapatnam North",
+            "lat": 17.7231,
+            "lng": 83.3013,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[1],
+            "ai_confidence": 0.88,
+            "ai_priority_score": 8.8,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow() - timedelta(days=2),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Temporary Housing",
+            "description": "Families living in unsafe temporary structures",
+            "category": "shelter",
+            "urgency": "high",
+            "location_name": "Visakhapatnam North",
+            "lat": 17.7231,
+            "lng": 83.3013,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[1],
+            "ai_confidence": 0.82,
+            "ai_priority_score": 7.2,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow() - timedelta(days=1),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Health Check-ups",
+            "description": "Post-cyclone health monitoring needed",
+            "category": "health",
+            "urgency": "medium",
+            "location_name": "Visakhapatnam North",
+            "lat": 17.7231,
+            "lng": 83.3013,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[1],
+            "ai_confidence": 0.75,
+            "ai_priority_score": 6.5,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Road Repairs",
+            "description": "Damaged roads blocking access to essential services",
+            "category": "infrastructure",
+            "urgency": "high",
+            "location_name": "Visakhapatnam North",
+            "lat": 17.7231,
+            "lng": 83.3013,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[2],
+            "ai_confidence": 0.79,
+            "ai_priority_score": 7.9,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Teacher Training",
+            "description": "Local teachers need skill development",
+            "category": "education",
+            "urgency": "medium",
+            "location_name": "Chittoor South",
+            "lat": 13.2172,
+            "lng": 79.1003,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[2],
+            "ai_confidence": 0.70,
+            "ai_priority_score": 6.0,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow() - timedelta(days=1),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Digital Learning Tools",
+            "description": "Schools lack computers and educational software",
+            "category": "education",
+            "urgency": "low",
+            "location_name": "Chittoor South",
+            "lat": 13.2172,
+            "lng": 79.1003,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[2],
+            "ai_confidence": 0.65,
+            "ai_priority_score": 5.5,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "title": "Nutritional Support",
+            "description": "Children need midday meal supplements",
+            "category": "food",
+            "urgency": "medium",
+            "location_name": "Chittoor South",
+            "lat": 13.2172,
+            "lng": 79.1003,
+            "area_id": "",
+            "source_type": "ai_discovered",
+            "source_program_id": program_ids[3],
+            "ai_confidence": 0.73,
+            "ai_priority_score": 6.3,
+            "status": "open",
+            "assigned_volunteers": [],
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
     ]
 
     ids = []
     for need in needs:
+        # Set area_id dynamically for new needs
+        if not need.get("area_id"):
+            areas_query = db.collection("areas").where("name", "==", need["location_name"]).stream()
+            for area_doc in areas_query:
+                need["area_id"] = area_doc.id
+                break
+        
         ref = db.collection("needs").document()
         ref.set(need)
         ids.append(ref.id)
@@ -490,6 +834,99 @@ def seed_volunteers() -> list[str]:
             "created_at": datetime.utcnow() - timedelta(days=15),
             "updated_at": datetime.utcnow(),
         },
+        # ============ ADDITIONAL VOLUNTEERS ============
+        {
+            "name": "Dr. Priya Sharma",
+            "email": "priya.sharma@example.com",
+            "phone": "+91-9876543210",
+            "location_name": "Guntur Rural",
+            "lat": 16.3067,
+            "lng": 80.4365,
+            "skills": ["medical", "health_education"],
+            "availability": "weekdays_morning",
+            "experience_years": 5,
+            "certifications": ["MBBS", "Public Health"],
+            "preferred_areas": ["Guntur Rural", "Visakhapatnam North"],
+            "emergency_contact": "+91-9876543211",
+            "active_assignments": 0,
+            "tasks_completed": 12,
+            "rating": 4.8,
+            "total_hours": 96,
+            "reliability_score": 0.95,
+            "categories_experienced": ["health", "medical"],
+            "max_concurrent_assignments": 2,
+            "created_at": datetime.utcnow() - timedelta(days=30),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "Rajesh Kumar",
+            "email": "rajesh.kumar@example.com",
+            "phone": "+91-9876543212",
+            "location_name": "Chittoor South",
+            "lat": 13.2172,
+            "lng": 79.1003,
+            "skills": ["teaching", "infrastructure", "coordination"],
+            "availability": "weekends_full",
+            "experience_years": 3,
+            "certifications": ["Teaching License", "Project Management"],
+            "preferred_areas": ["Chittoor South"],
+            "emergency_contact": "+91-9876543213",
+            "active_assignments": 1,
+            "tasks_completed": 8,
+            "rating": 4.6,
+            "total_hours": 64,
+            "reliability_score": 0.90,
+            "categories_experienced": ["education", "infrastructure"],
+            "max_concurrent_assignments": 3,
+            "created_at": datetime.utcnow() - timedelta(days=20),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "Meera Patel",
+            "email": "meera.patel@example.com",
+            "phone": "+91-9876543214",
+            "location_name": "Guntur Rural",
+            "lat": 16.3067,
+            "lng": 80.4365,
+            "skills": ["food_distribution", "community_outreach", "logistics"],
+            "availability": "flexible",
+            "experience_years": 2,
+            "certifications": ["Food Safety", "NGO Volunteer Training"],
+            "preferred_areas": ["Guntur Rural", "Chittoor South"],
+            "emergency_contact": "+91-9876543215",
+            "active_assignments": 0,
+            "tasks_completed": 15,
+            "rating": 4.9,
+            "total_hours": 120,
+            "reliability_score": 0.96,
+            "categories_experienced": ["food", "community"],
+            "max_concurrent_assignments": 3,
+            "created_at": datetime.utcnow() - timedelta(days=15),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "Arun Singh",
+            "email": "arun.singh@example.com",
+            "phone": "+91-9876543216",
+            "location_name": "Visakhapatnam North",
+            "lat": 17.7231,
+            "lng": 83.3013,
+            "skills": ["water_sanitation", "environmental_engineering", "surveying"],
+            "availability": "weekdays_evening",
+            "experience_years": 4,
+            "certifications": ["Environmental Engineering", "Water Quality Testing"],
+            "preferred_areas": ["Visakhapatnam North", "Guntur Rural"],
+            "emergency_contact": "+91-9876543217",
+            "active_assignments": 2,
+            "tasks_completed": 22,
+            "rating": 4.7,
+            "total_hours": 176,
+            "reliability_score": 0.93,
+            "categories_experienced": ["water", "infrastructure", "environment"],
+            "max_concurrent_assignments": 2,
+            "created_at": datetime.utcnow() - timedelta(days=10),
+            "updated_at": datetime.utcnow(),
+        },
     ]
 
     ids = []
@@ -544,12 +981,126 @@ def seed_impact_logs(area_ids: list[str]):
             "area_id": area_ids[3],
             "created_at": datetime.utcnow(),
         },
+        # ============ ADDITIONAL IMPACT LOGS ============
+        {
+            "category": "health",
+            "description": "Conducted health check-ups for 50 children in Guntur Rural",
+            "people_helped": 50,
+            "volunteer_hours": 6,
+            "area_id": "",  # Will be set dynamically
+            "activity_type": "medical_camp",
+            "volunteer_id": "",  # Will be set to a volunteer ID
+            "resources_used": ["Medical kit", "Blood pressure monitor"],
+            "challenges_faced": "Limited transportation to remote areas",
+            "lessons_learned": "Early morning camps work better for school children",
+            "follow_up_needed": "Vaccination schedule for identified cases",
+            "impact_rating": 4,
+            "coordinator_feedback": "Excellent work in difficult conditions",
+            "created_at": datetime.utcnow() - timedelta(days=7),
+        },
+        {
+            "category": "education",
+            "description": "Taught mathematics to 25 students in Chittoor South",
+            "people_helped": 25,
+            "volunteer_hours": 4,
+            "area_id": "",
+            "activity_type": "teaching_session",
+            "volunteer_id": "",
+            "resources_used": ["Textbooks", "Whiteboard", "Stationery"],
+            "challenges_faced": "Students at different learning levels",
+            "lessons_learned": "Small group teaching more effective than large classes",
+            "follow_up_needed": "Homework assignments for next session",
+            "impact_rating": 5,
+            "coordinator_feedback": "Students showed significant improvement",
+            "created_at": datetime.utcnow() - timedelta(days=5),
+        },
+        {
+            "category": "infrastructure",
+            "description": "Repaired damaged school roof in Visakhapatnam North",
+            "people_helped": 120,  # Students who benefit
+            "volunteer_hours": 8,
+            "area_id": "",
+            "activity_type": "infrastructure_repair",
+            "volunteer_id": "",
+            "resources_used": ["Tools", "Building materials", "Safety equipment"],
+            "challenges_faced": "Heavy monsoon rains during repair work",
+            "lessons_learned": "Pre-monsoon repairs prevent water damage",
+            "follow_up_needed": "Regular maintenance schedule",
+            "impact_rating": 4,
+            "coordinator_feedback": "Quality work despite weather challenges",
+            "created_at": datetime.utcnow() - timedelta(days=3),
+        },
+        {
+            "category": "food",
+            "description": "Distributed nutritional supplements to 80 families",
+            "people_helped": 320,  # Family members
+            "volunteer_hours": 5,
+            "area_id": "",
+            "activity_type": "food_distribution",
+            "volunteer_id": "",
+            "resources_used": ["Food packages", "Distribution lists", "Vehicle"],
+            "challenges_faced": "Reaching remote households",
+            "lessons_learned": "Community volunteers help with last-mile delivery",
+            "follow_up_needed": "Monitor nutritional improvement in children",
+            "impact_rating": 5,
+            "coordinator_feedback": "Efficient distribution, good community engagement",
+            "created_at": datetime.utcnow() - timedelta(days=4),
+        },
+        {
+            "category": "water",
+            "description": "Tested water quality in 15 wells across Guntur Rural",
+            "people_helped": 450,  # People using these wells
+            "volunteer_hours": 7,
+            "area_id": "",
+            "activity_type": "water_testing",
+            "volunteer_id": "",
+            "resources_used": ["Water testing kit", "GPS device", "Sample bottles"],
+            "challenges_faced": "Some wells difficult to access",
+            "lessons_learned": "Regular testing prevents contamination issues",
+            "follow_up_needed": "Install water filters where needed",
+            "impact_rating": 4,
+            "coordinator_feedback": "Thorough testing, good documentation",
+            "created_at": datetime.utcnow() - timedelta(days=6),
+        },
+        {
+            "category": "community",
+            "description": "Organized community meeting to discuss local needs",
+            "people_helped": 60,
+            "volunteer_hours": 3,
+            "area_id": "",
+            "activity_type": "community_meeting",
+            "volunteer_id": "",
+            "resources_used": ["Meeting hall", "Projector", "Refreshments"],
+            "challenges_faced": "Low attendance initially",
+            "lessons_learned": "Door-to-door invitations increase participation",
+            "follow_up_needed": "Form community action committee",
+            "impact_rating": 4,
+            "coordinator_feedback": "Good engagement, identified new volunteers",
+            "created_at": datetime.utcnow() - timedelta(days=2),
+        },
     ]
 
     for imp in impacts:
+        # Set area_id dynamically for new impact logs
+        if not imp.get("area_id"):
+            # Map area names to indices in area_ids
+            area_name_to_index = {
+                "Guntur Rural": 4,  # New areas start at index 4
+                "Visakhapatnam North": 5,
+                "Chittoor South": 6
+            }
+            if imp.get("activity_type") in ["medical_camp", "water_testing"]:
+                imp["area_id"] = area_ids[area_name_to_index["Guntur Rural"]]
+            elif imp.get("activity_type") == "teaching_session":
+                imp["area_id"] = area_ids[area_name_to_index["Chittoor South"]]
+            elif imp.get("activity_type") == "infrastructure_repair":
+                imp["area_id"] = area_ids[area_name_to_index["Visakhapatnam North"]]
+            elif imp.get("activity_type") in ["food_distribution", "community_meeting"]:
+                imp["area_id"] = area_ids[area_name_to_index["Guntur Rural"]]  # Default to Guntur
+        
         ref = db.collection("impact_logs").document()
         ref.set(imp)
-        print(f"  Created impact: {imp['category']} - {imp['people_helped']} people helped")
+        print(f"  Created impact: {imp.get('activity_type', imp['category'])} - {imp['people_helped']} people helped")
 
 
 def seed_surveys(program_ids: list[str]):
@@ -644,8 +1195,10 @@ if __name__ == "__main__":
     # Uncomment this if you want a fresh reset before seeding:
     clear_all()
 
+    seed_users()
     program_ids = seed_programs()
     area_ids = seed_areas(program_ids)
+    update_new_areas_with_programs(program_ids)
     need_ids = seed_needs(program_ids, area_ids)
     vol_ids = seed_volunteers()
     seed_impact_logs(area_ids)
@@ -654,10 +1207,11 @@ if __name__ == "__main__":
     print()
     print("=" * 60)
     print("  SEED DATA COMPLETE!")
+    print(f"  Users:       4")
     print(f"  Programs:    {len(program_ids)}")
     print(f"  Areas:       {len(area_ids)}")
     print(f"  Needs:       {len(need_ids)}")
     print(f"  Volunteers:  {len(vol_ids)}")
-    print("  Impacts:     5")
+    print("  Impacts:     11")
     print("  Surveys:     3")
     print("=" * 60)
