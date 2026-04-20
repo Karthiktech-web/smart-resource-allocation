@@ -6,11 +6,14 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IngestPage from './pages/IngestPage';
 import NeedsPage from './pages/NeedsPage';
-import ProgramsPage from './pages/ProgramsPage';
+import ProgramsPage from './pages/ProgramsDetailPage';
 import AllocatePage from './pages/AllocatePage';
 import ImpactPage from './pages/ImpactPage';
 import VolunteersPage from './pages/VolunteersPage';
 import AreaDetailPage from './pages/AreaDetailPage';
+import AreaDetailPage from './pages/AreaDetailPage';
+<Route path="/areas/:id" element={<AreaDetailPage />} />
+
 
 function App() {
   const [user, loading] = useAuthState(auth);
