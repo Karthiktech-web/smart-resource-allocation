@@ -175,6 +175,11 @@ __marimo__/
 backend/service-account-key.json
 backend/.env
 frontend/.env
+frontend/.env.production
+
+# Firebase
+.firebase/
+.firebaserc
 
 # Node / frontend
 node_modules/
