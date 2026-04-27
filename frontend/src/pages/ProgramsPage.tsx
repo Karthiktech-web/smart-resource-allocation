@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getPrograms } from '../lib/api';
 
 interface Program {
@@ -35,7 +36,12 @@ export default function ProgramsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {programs.map(p => (
-            <div key={p.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <Link
+              key={p.id}
+              to={`/programs/${p.id}`}
+              className="block bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:border-blue-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label={`View ${p.name} details`}
+            >
               <div className="flex items-start justify-between mb-3">
                 <h3 className="font-semibold text-gray-800">{p.name}</h3>
                 <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
@@ -48,7 +54,7 @@ export default function ProgramsPage() {
                 <span className="text-gray-600">📊 {p.survey_count} surveys</span>
                 <span className="text-gray-600">🆘 {p.needs_discovered} needs</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

@@ -104,6 +104,12 @@ async def get_trend_data(days: int = 30) -> dict[str, Any]:
     return await get_trends(days=days)
 
 
+@app.get("/api/analytics/efficiency")
+async def get_efficiency() -> dict[str, Any]:
+    from app.services.analytics import get_efficiency_metrics
+    return await get_efficiency_metrics()
+
+
 # Added limit: 5 predictions per minute
 @app.get("/api/analytics/predictions")
 @limiter.limit("5/minute")

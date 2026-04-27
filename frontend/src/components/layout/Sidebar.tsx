@@ -8,6 +8,7 @@ import {
   BarChart3,
   Map,
   UserCircle,
+  FileText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -25,10 +26,15 @@ const navItems: NavItem[] = [
   { to: '/programs', icon: FolderOpen, label: 'Programs' },
   { to: '/allocate', icon: Users, label: 'Allocate' },
   { to: '/impact', icon: BarChart3, label: 'Impact' },
+  { to: '/reports', icon: FileText, label: 'Reports' },
   { to: '/volunteers', icon: UserCircle, label: 'Volunteers' },
 ];
 
-export default function Sidebar() {
+type SidebarProps = {
+  onLinkClick?: () => void;
+};
+
+export default function Sidebar({ onLinkClick }: SidebarProps) {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
       
@@ -55,6 +61,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={onLinkClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive

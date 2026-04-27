@@ -1,13 +1,14 @@
 import { signOut } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
-import { LogOut, Bell } from 'lucide-react';
+import { LogOut, Bell, Menu } from 'lucide-react';
 
 interface HeaderProps {
   user: User | null;
+  onMenuClick?: () => void;
 }
 
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user, onMenuClick }: HeaderProps) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -17,16 +18,27 @@ export default function Header({ user }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      
-      {/* Title */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-800">
-          Smart Resource Allocation
-        </h2>
-        <p className="text-xs text-gray-400">
-          AI-Powered Volunteer Coordination for Social Impact
-        </p>
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6">
+      <div className="flex items-center gap-4">
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 text-gray-500 hover:text-gray-700 rounded-lg"
+            aria-label="Open navigation menu"
+          >
+            <Menu size={20} />
+          </button>
+        )}
+
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800">
+            Smart Resource Allocation
+          </h2>
+          <p className="text-xs text-gray-400">
+            AI-Powered Volunteer Coordination for Social Impact
+          </p>
+        </div>
+
       </div>
 
       {/* Right Section */}

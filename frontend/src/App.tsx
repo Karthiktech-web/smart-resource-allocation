@@ -6,13 +6,13 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IngestPage from './pages/IngestPage';
 import NeedsPage from './pages/NeedsPage';
-import ProgramsPage from './pages/ProgramsDetailPage';
+import ProgramsPage from './pages/ProgramsPage';
+import ProgramDetailPage from './pages/ProgramsDetailPage';
+import ReportsPage from './pages/ReportsPage';
 import AllocatePage from './pages/AllocatePage';
 import ImpactPage from './pages/ImpactPage';
 import VolunteersPage from './pages/VolunteersPage';
 import AreaDetailPage from './pages/AreaDetailPage';
-<Route path="/areas/:id" element={<AreaDetailPage />} />
-
 
 function App() {
   const [user, loading] = useAuthState(auth);
@@ -40,8 +40,10 @@ function App() {
           <Route path="/ingest" element={<IngestPage />} />
           <Route path="/needs" element={<NeedsPage />} />
           <Route path="/programs" element={<ProgramsPage />} />
+          <Route path="/programs/:id" element={<ProgramDetailPage />} />
           <Route path="/allocate" element={<AllocatePage />} />
           <Route path="/impact" element={<ImpactPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/volunteers" element={<VolunteersPage />} />
           <Route path="/areas/:id" element={<AreaDetailPage />} />
         </Route>
