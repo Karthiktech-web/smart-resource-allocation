@@ -1,13 +1,32 @@
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 import { Map, Shield, BarChart3, Users } from 'lucide-react';
+import { useState } from 'react';
 
 export default function LoginPage() {
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
   const handleGoogleLogin = async () => {
     try {
+      setError('');
+      setLoading(true);
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
+      
+      // Provide user-friendly error messages
+      if (error.code === 'auth/popup-blocked') {
+        setError('Popup was blocked. Please enable popups for this site.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        setError('Sign-in cancelled.');
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in window was closed.');
+      } else {
+        setError('Failed to sign in. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,17 +68,34 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
           {/* Google Sign-In Button */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 rounded-xl px-6 py-3.5 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 rounded-xl px-6 py-3.5 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <img
-              src="https://www.google.com/favicon.ico"
-              alt="Google"
-              className="w-5 h-5"
-            />
-            Sign in with Google
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                <img
+                  src="https://www.google.com/favicon.ico"
+                  alt="Google"
+                  className="w-5 h-5"
+                />
+                Sign in with Google
+              </>
+            )}
           </button>
 
           <p className="text-xs text-gray-400 mt-6 text-center">
