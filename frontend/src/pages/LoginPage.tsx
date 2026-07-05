@@ -1,31 +1,62 @@
-import { signInWithPopup } from 'firebase/auth';
+import { getRedirectResult, signInWithPopup, signInWithRedirect } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 import { auth, googleProvider } from '../lib/firebase';
 import { Map, Shield, BarChart3, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Redirect sign-in failed:', err);
+        setError('Failed to complete sign-in. Please try again.');
+        setLoading(false);
+      }
+    };
+
+    handleRedirect();
+  }, []);
+
   const handleGoogleLogin = async () => {
     try {
       setError('');
       setLoading(true);
-      await signInWithPopup(auth, googleProvider);
-    } catch (error: any) {
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (popupError: unknown) {
+        if (
+          popupError instanceof FirebaseError
+          && ['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(popupError.code)
+        ) {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        }
+        throw popupError;
+      }
+    } catch (error: unknown) {
       console.error('Login failed:', error);
-      
-      // Provide user-friendly error messages
-      if (error.code === 'auth/popup-blocked') {
-        setError('Popup was blocked. Please enable popups for this site.');
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        setError('Sign-in cancelled.');
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in window was closed.');
+
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/operation-not-allowed') {
+          setError('Google sign-in is not enabled for this project.');
+        } else if (error.code === 'auth/unauthorized-domain') {
+          setError('This domain is not authorized for Firebase Auth.');
+        } else if (error.code === 'auth/configuration-not-found') {
+          setError('Firebase Auth is not configured for this app.');
+        } else {
+          setError(`Failed to sign in. ${error.message}`);
+        }
       } else {
         setError('Failed to sign in. Please try again.');
       }
-    } finally {
       setLoading(false);
     }
   };

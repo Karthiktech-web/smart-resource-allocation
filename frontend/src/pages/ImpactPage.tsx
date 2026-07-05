@@ -25,11 +25,40 @@ import {
 import { getEfficiency, getTrends } from '../lib/api';
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/StateDisplay';
 
+type EfficiencyData = {
+  allocation_efficiency?: {
+    overall_efficiency_score?: number;
+    fill_rate?: number;
+  };
+  area_metrics?: {
+    coverage_rate?: number;
+    critical_areas?: number;
+    total_volunteer_gap?: number;
+  };
+  needs_metrics?: {
+    resolution_rate?: number;
+  };
+  volunteer_metrics?: {
+    utilization_rate?: number;
+  };
+};
+
+type TrendsData = {
+  summary?: {
+    total_people_helped?: number;
+    total_volunteer_hours?: number;
+  };
+  needs_by_category?: Record<string, number>;
+  urgency_distribution?: Record<string, number>;
+  needs_timeline?: Array<Record<string, number | string>>;
+  impact_timeline?: Array<Record<string, number | string>>;
+};
+
 const COLORS = ['#4285f4', '#ea4335', '#fbbc05', '#34a853', '#ff6d01', '#46bdc6'];
 
 export default function ImpactPage() {
-  const [efficiency, setEfficiency] = useState<any>(null);
-  const [trends, setTrends] = useState<any>(null);
+  const [efficiency, setEfficiency] = useState<EfficiencyData | null>(null);
+  const [trends, setTrends] = useState<TrendsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

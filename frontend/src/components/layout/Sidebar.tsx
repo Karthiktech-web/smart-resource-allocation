@@ -9,6 +9,8 @@ import {
   Map,
   UserCircle,
   FileText,
+  ListChecks,
+  Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -20,11 +22,13 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/ingest', icon: Upload, label: 'Ingest Data' },
   { to: '/needs', icon: AlertTriangle, label: 'Needs' },
   { to: '/programs', icon: FolderOpen, label: 'Programs' },
   { to: '/allocate', icon: Users, label: 'Allocate' },
+  { to: '/tasks', icon: ListChecks, label: 'Tasks' },
+  { to: '/insights', icon: Sparkles, label: 'Insights' },
   { to: '/impact', icon: BarChart3, label: 'Impact' },
   { to: '/reports', icon: FileText, label: 'Reports' },
   { to: '/volunteers', icon: UserCircle, label: 'Volunteers' },

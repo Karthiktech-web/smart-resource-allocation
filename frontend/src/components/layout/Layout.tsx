@@ -1,9 +1,10 @@
 ﻿import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import type { User } from 'firebase/auth';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-export default function Layout({ user }: { user: any }) {
+export default function Layout({ user }: { user: User | null }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

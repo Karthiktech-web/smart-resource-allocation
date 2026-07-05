@@ -10,15 +10,39 @@ import {
 import { digitizeSurvey, getPrograms } from '../lib/api';
 import { getUrgencyColor, getCategoryColor } from '../lib/utils';
 
+type ProgramItem = {
+  id: string;
+  name?: string;
+  organization?: string;
+};
+
+type NeedExtraction = {
+  urgency?: string;
+  category?: string;
+  description?: string;
+  confidence?: number;
+  estimated_people_affected?: number;
+};
+
+type IngestResults = {
+  raw_text?: string;
+  language_detected?: string;
+  translated_text?: string;
+  needs_extracted?: NeedExtraction[];
+  sentiment?: string;
+  summary?: string;
+  error?: string;
+};
+
 export default function IngestPage() {
-  const [programs, setPrograms] = useState<any[]>([]);
+  const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [selectedProgram, setSelectedProgram] = useState('');
   const [locationName, setLocationName] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [processing, setProcessing] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<IngestResults | null>(null);
   const [error, setError] = useState('');
 
   // Load programs on mount
@@ -59,11 +83,13 @@ export default function IngestPage() {
 
       const res = await digitizeSurvey(formData);
       setResults(res.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Processing failed:', err);
-      setError(
-        err?.response?.data?.detail || 'Processing failed. Please try again.'
-      );
+      const errorDetail =
+        typeof err === 'object' && err !== null && 'response' in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined;
+      setError(errorDetail || 'Processing failed. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -93,7 +119,7 @@ export default function IngestPage() {
           className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="">-- Select a program --</option>
-          {programs.map((p: any) => (
+          {programs.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name} ({p.organization})
             </option>
@@ -215,7 +241,7 @@ export default function IngestPage() {
             </p>
             <p className="text-sm bg-gray-50 p-3 rounded-lg text-gray-700">
               {results.raw_text?.substring(0, 300)}
-              {results.raw_text?.length > 300 ? '...' : ''}
+              {(results.raw_text?.length ?? 0) > 300 ? '...' : ''}
             </p>
           </div>
 
@@ -230,7 +256,7 @@ export default function IngestPage() {
             </p>
             <p className="text-sm bg-gray-50 p-3 rounded-lg text-gray-700">
               {results.translated_text?.substring(0, 300)}
-              {results.translated_text?.length > 300 ? '...' : ''}
+              {(results.translated_text?.length ?? 0) > 300 ? '...' : ''}
             </p>
           </div>
 
@@ -240,7 +266,7 @@ export default function IngestPage() {
               Needs Discovered by AI:
             </p>
             <div className="space-y-2">
-              {results.needs_extracted?.map((need: any, i: number) => (
+              {results.needs_extracted?.map((need, i) => (
                 <div
                   key={i}
                   className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
@@ -276,7 +302,7 @@ export default function IngestPage() {
                     </div>
                     <p className="text-sm text-gray-700">{need.description}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Confidence: {(need.confidence * 100).toFixed(0)}% |
+                      Confidence: {((need.confidence ?? 0) * 100).toFixed(0)}% |
                       People affected: ~{need.estimated_people_affected}
                     </p>
                   </div>
@@ -295,7 +321,7 @@ export default function IngestPage() {
   {results.needs_extracted?.length
     ? (
         (results.needs_extracted.reduce(
-          (sum: number, need: any) => sum + (need.confidence || 0),
+          (sum: number, need: NeedExtraction) => sum + (need.confidence || 0),
           0
         ) /
           results.needs_extracted.length) *

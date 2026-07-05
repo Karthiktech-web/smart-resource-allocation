@@ -1,7 +1,58 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from enum import Enum
 
+
+class UserRole(str, Enum):
+    admin = "admin"
+    volunteer = "volunteer"
+    viewer = "viewer"
+
+
+class NGO(BaseModel):
+    id: Optional[str] = None
+    name: str
+    sector: str
+    regions: list[str] = []
+    lat: float = 0.0
+    lng: float = 0.0
+    reliability_score: float = 0.0
+    tasks_total: int = 0
+    tasks_completed: int = 0
+    max_concurrent: int = 5
+    active_assignments: int = 0
+    verified: bool = False
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class NGOCreate(BaseModel):
+    name: str
+    sector: str
+    regions: list[str] = []
+    lat: float = 0.0
+    lng: float = 0.0
+    max_concurrent: int = 5
+
+
+class TaskCreate(BaseModel):
+    need_id: str
+    title: str
+    category: str
+    quantity: float = 0
+    unit: str = ""
+    area_id: Optional[str] = None
+    lat: float = 0
+    lng: float = 0
+
+
+class Task(TaskCreate):
+    id: str
+    status: str = "open"  # open|broadcast|accepted|acted|verified|requeued
+    parent_task_id: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 class ProgramCreate(BaseModel):
     name: str

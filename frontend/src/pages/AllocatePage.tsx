@@ -12,9 +12,34 @@ import {
   Loader2,
 } from 'lucide-react';
 
+type AreaPriority = {
+  id: string;
+  name?: string;
+  needs_by_category?: Record<string, number>;
+  compound_score?: number;
+  area_priority?: string;
+  volunteers_assigned?: number;
+  volunteers_recommended?: number;
+  volunteer_gap?: number;
+};
+
+type Allocation = {
+  volunteer_name?: string;
+  area_name?: string;
+  estimated_hours?: number;
+  estimated_impact?: number;
+  reason?: string;
+  action_steps?: string[];
+};
+
+type Plan = {
+  plan_summary?: string;
+  allocations?: Allocation[];
+};
+
 export default function AllocatePage() {
-  const [areas, setAreas] = useState<any[]>([]);
-  const [plan, setPlan] = useState<any>(null);
+  const [areas, setAreas] = useState<AreaPriority[]>([]);
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [approving, setApproving] = useState(false);
@@ -114,7 +139,7 @@ export default function AllocatePage() {
         )}
 
         <div className="space-y-3">
-          {areas.map((area: any, i: number) => (
+          {areas.map((area, i) => (
             <div
               key={area.id || i}
               className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
@@ -155,9 +180,9 @@ export default function AllocatePage() {
                   {area?.volunteers_assigned ?? 0}/
                   {area?.volunteers_recommended ?? 0}
 
-                  {area?.volunteer_gap > 0 && (
+                  {((area?.volunteer_gap ?? 0) > 0) && (
                     <span className="text-red-500 ml-1">
-                      (gap: {area.volunteer_gap})
+                      (gap: {area?.volunteer_gap ?? 0})
                     </span>
                   )}
                 </span>
@@ -180,7 +205,7 @@ export default function AllocatePage() {
           </p>
 
           <div className="space-y-4">
-            {plan?.allocations?.map((alloc: any, i: number) => (
+            {plan?.allocations?.map((alloc, i) => (
               <div
                 key={i}
                 className="border rounded-lg p-4 bg-purple-50"

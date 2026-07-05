@@ -3,8 +3,21 @@ import { FileText, Brain, Loader2, AlertTriangle, TrendingUp, Target } from 'luc
 import { generateReport } from '../lib/api';
 import { EmptyState, LoadingState } from '../components/ui/StateDisplay';
 
+type ReportData = {
+  title?: string;
+  generated_at?: string;
+  time_range?: string;
+  executive_summary?: string;
+  key_metrics?: Record<string, string | number>;
+  success_stories?: Array<string | unknown>;
+  recommendations?: Array<string | unknown>;
+  risk_alerts?: Array<string | unknown>;
+};
+
+type StoryItem = string | unknown;
+
 export default function ReportsPage() {
-  const [report, setReport] = useState<any>(null);
+  const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [days, setDays] = useState(30);
   const [error, setError] = useState<string | null>(null);
@@ -92,14 +105,14 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {report.success_stories?.length > 0 && (
+          {report.success_stories && report.success_stories.length > 0 && (
             <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-3 text-gray-900">
                 <Target className="h-5 w-5 text-green-600" />
                 <h3 className="text-xl font-semibold">Success Stories</h3>
               </div>
               <div className="space-y-3">
-                {report.success_stories.map((story: any, index: number) => (
+                {report.success_stories.map((story: StoryItem, index: number) => (
                   <div key={index} className="rounded-2xl bg-green-50 p-4 text-sm text-gray-700">
                     {typeof story === 'string' ? story : JSON.stringify(story)}
                   </div>
@@ -108,28 +121,28 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {report.recommendations?.length > 0 && (
+          {report.recommendations && report.recommendations.length > 0 && (
             <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-3 text-gray-900">
                 <TrendingUp className="h-5 w-5 text-blue-600" />
                 <h3 className="text-xl font-semibold">Recommendations</h3>
               </div>
               <ol className="space-y-3 list-decimal pl-5 text-sm text-gray-700">
-                {report.recommendations.map((item: any, index: number) => (
+                {report.recommendations.map((item: StoryItem, index: number) => (
                   <li key={index}>{typeof item === 'string' ? item : JSON.stringify(item)}</li>
                 ))}
               </ol>
             </div>
           )}
 
-          {report.risk_alerts?.length > 0 && (
+          {report.risk_alerts && report.risk_alerts.length > 0 && (
             <div className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-3 text-gray-900">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
                 <h3 className="text-xl font-semibold">Risk Alerts</h3>
               </div>
               <div className="space-y-3 text-sm text-gray-700">
-                {report.risk_alerts.map((alert: any, index: number) => (
+                {report.risk_alerts.map((alert: StoryItem, index: number) => (
                   <div key={index} className="rounded-2xl bg-red-100 p-4">
                     {typeof alert === 'string' ? alert : JSON.stringify(alert)}
                   </div>

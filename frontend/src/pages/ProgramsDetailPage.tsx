@@ -9,12 +9,42 @@ import {
 } from '../lib/api';
 import { FileText, AlertTriangle, Loader2 } from 'lucide-react';
 
+type ProgramDetail = {
+  id: string;
+  name?: string;
+  organization?: string;
+  category?: string;
+  description?: string;
+  regions?: string[];
+};
+
+type ProgramSurvey = {
+  id: string;
+  location_name?: string;
+  source_type?: string;
+  language_detected?: string;
+  ai_analysis?: { needs_extracted?: unknown[] };
+};
+
+type ProgramNeed = {
+  id: string;
+  urgency?: string;
+  category?: string;
+  title?: string;
+};
+
+type StatCardProps = {
+  label: string;
+  value: string | number;
+  color?: string;
+};
+
 export default function ProgramDetailPage() {
   const { id } = useParams();
 
-  const [program, setProgram] = useState<any>(null);
-  const [surveys, setSurveys] = useState<any[]>([]);
-  const [needs, setNeeds] = useState<any[]>([]);
+  const [program, setProgram] = useState<ProgramDetail | null>(null);
+  const [surveys, setSurveys] = useState<ProgramSurvey[]>([]);
+  const [needs, setNeeds] = useState<ProgramNeed[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch Data
@@ -94,7 +124,7 @@ export default function ProgramDetailPage() {
           <p className="text-sm text-gray-500">No surveys found</p>
         )}
 
-        {surveys.map((s: any) => (
+        {surveys.map((s) => (
           <div key={s.id} className="border-b py-3 last:border-0">
             <p className="text-sm font-medium">
               {s?.location_name || 'Unknown Location'}
@@ -117,7 +147,7 @@ export default function ProgramDetailPage() {
           <p className="text-sm text-gray-500">No needs found</p>
         )}
 
-        {needs.map((n: any) => (
+        {needs.map((n) => (
           <div key={n.id} className="border-b py-3 last:border-0">
             <div className="flex items-center gap-2 mb-1">
               <span
@@ -148,7 +178,7 @@ export default function ProgramDetailPage() {
 }
 
 // Reusable Stat Card
-function StatCard({ label, value, color }: any) {
+function StatCard({ label, value, color }: StatCardProps) {
   return (
     <div className="bg-white rounded-xl border p-4 text-center">
       <p className={`text-2xl font-bold ${color}`}>

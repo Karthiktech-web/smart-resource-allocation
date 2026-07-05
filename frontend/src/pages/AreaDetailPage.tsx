@@ -3,12 +3,53 @@ import { useParams } from 'react-router-dom';
 import { getAreaById, getAreaNeeds, getAreaInsights } from '../lib/api';
 import { TrendingUp, Brain, Loader2 } from 'lucide-react';
 
+type AreaDetail = {
+  id: string;
+  name?: string;
+  district?: string;
+  state?: string;
+  area_priority?: string;
+  compound_score?: number;
+  total_needs?: number;
+  open_needs?: number;
+  critical_needs_count?: number;
+  volunteers_assigned?: number;
+  volunteers_recommended?: number;
+  volunteer_gap?: number;
+  needs_by_category?: Record<string, number>;
+  ai_insights?: string[];
+  programs_active?: unknown[];
+};
+
+type NeedDetail = {
+  id: string;
+  title?: string;
+  description?: string;
+  status?: string;
+  urgency?: string;
+  category?: string;
+  confidence?: number;
+  estimated_people_affected?: number;
+};
+
+type InsightsData = {
+  analysis?: {
+    cross_program_insights?: string[];
+  };
+};
+
+type StatCardProps = {
+  label: string;
+  value?: string | number;
+  color?: string;
+};
+
 export default function AreaDetailPage() {
   const { id } = useParams();
 
-  const [area, setArea] = useState<any>(null);
-  const [needs, setNeeds] = useState<any[]>([]);
-  const [insights, setInsights] = useState<any>(null);
+  const [area, setArea] = useState<AreaDetail | null>(null);
+  const [needs, setNeeds] = useState<NeedDetail[]>([]);
+  const [insights, setInsights] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzingInsights, setAnalyzingInsights] = useState(false);
 
@@ -66,7 +107,7 @@ export default function AreaDetailPage() {
   }
 
   // Priority Colors
-  const priorityColors: any = {
+  const priorityColors: Record<string, string> = {
     critical: 'bg-red-100 text-red-800 border-red-300',
     high: 'bg-orange-100 text-orange-800 border-orange-300',
     medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -97,7 +138,7 @@ export default function AreaDetailPage() {
         <div className="flex items-center gap-3">
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium border ${
-              priorityColors[area?.area_priority] || priorityColors.low
+              priorityColors[area.area_priority ?? 'low']
             }`}
           >
             {(area?.area_priority || 'low').toUpperCase()} PRIORITY
@@ -182,7 +223,7 @@ export default function AreaDetailPage() {
         <h2 className="font-semibold mb-4">All Needs ({needs.length})</h2>
 
         <div className="space-y-3">
-          {needs.map((need: any) => (
+          {needs.map((need) => (
             <div key={need.id} className="border rounded-lg p-4 hover:bg-gray-50">
               <div className="flex justify-between">
                 <div>
@@ -216,7 +257,7 @@ export default function AreaDetailPage() {
 }
 
 // Reusable Stat Card
-function StatCard({ label, value, color = 'text-gray-800' }: any) {
+function StatCard({ label, value, color = 'text-gray-800' }: StatCardProps) {
   return (
     <div className="bg-white rounded-xl border p-4">
       <p className="text-xs text-gray-500">{label}</p>
