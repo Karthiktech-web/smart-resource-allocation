@@ -11,6 +11,7 @@ import {
   FileText,
   ListChecks,
   Sparkles,
+  Radio,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -29,6 +30,7 @@ const navItems: NavItem[] = [
   { to: '/allocate', icon: Users, label: 'Allocate' },
   { to: '/tasks', icon: ListChecks, label: 'Tasks' },
   { to: '/insights', icon: Sparkles, label: 'Insights' },
+  { to: '/events', icon: Radio, label: 'Event Mode' },
   { to: '/impact', icon: BarChart3, label: 'Impact' },
   { to: '/reports', icon: FileText, label: 'Reports' },
   { to: '/volunteers', icon: UserCircle, label: 'Volunteers' },
