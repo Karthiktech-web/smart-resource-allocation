@@ -14,12 +14,14 @@ import {
   Radio,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useAuthCtx, type Role } from '../../context/authContext';
 
 // Type for nav items (BEST PRACTICE)
 type NavItem = {
   to: string;
   icon: LucideIcon;
   label: string;
+  roles?: Role[]; // if omitted, visible to everyone
 };
 
 const navItems: NavItem[] = [
@@ -27,10 +29,10 @@ const navItems: NavItem[] = [
   { to: '/ingest', icon: Upload, label: 'Ingest Data' },
   { to: '/needs', icon: AlertTriangle, label: 'Needs' },
   { to: '/programs', icon: FolderOpen, label: 'Programs' },
-  { to: '/allocate', icon: Users, label: 'Allocate' },
-  { to: '/tasks', icon: ListChecks, label: 'Tasks' },
-  { to: '/insights', icon: Sparkles, label: 'Insights' },
-  { to: '/events', icon: Radio, label: 'Event Mode' },
+  { to: '/allocate', icon: Users, label: 'Allocate', roles: ['admin'] },
+  { to: '/tasks', icon: ListChecks, label: 'Tasks', roles: ['admin'] },
+  { to: '/insights', icon: Sparkles, label: 'Insights', roles: ['admin'] },
+  { to: '/events', icon: Radio, label: 'Event Mode', roles: ['admin'] },
   { to: '/impact', icon: BarChart3, label: 'Impact' },
   { to: '/reports', icon: FileText, label: 'Reports' },
   { to: '/volunteers', icon: UserCircle, label: 'Volunteers' },
@@ -41,6 +43,11 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ onLinkClick }: SidebarProps) {
+  const { role } = useAuthCtx();
+  const visibleItems = navItems.filter(
+    (item) => !item.roles || item.roles.includes(role),
+  );
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
       
@@ -63,7 +70,7 @@ export default function Sidebar({ onLinkClick }: SidebarProps) {
 
       {/* Navigation Links */}
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {visibleItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
