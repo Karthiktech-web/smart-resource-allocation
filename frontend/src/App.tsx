@@ -12,6 +12,7 @@ import ReportsPage from './pages/ReportsPage';
 import AllocatePage from './pages/AllocatePage';
 import TasksPage from './pages/TasksPage';
 import InsightsPage from './pages/InsightsPage';
+import EventModePage from './pages/EventModePage';
 import ImpactPage from './pages/ImpactPage';
 import VolunteersPage from './pages/VolunteersPage';
 import AreaDetailPage from './pages/AreaDetailPage';
@@ -65,6 +66,14 @@ function AuthedApp() {
           element={
             <RoleGuard allow={['admin']}>
               <InsightsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <RoleGuard allow={['admin']}>
+              <EventModePage />
             </RoleGuard>
           }
         />
